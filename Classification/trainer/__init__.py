@@ -1,2 +1,2 @@
-from .train import get_optimizer_and_scheduler, train, train_with_rewind
+from .train import get_optimizer_and_scheduler, train, l1_regularization
 from .val import validate
