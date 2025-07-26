@@ -204,7 +204,7 @@ def main():
         unlearn_method = unlearn.get_unlearn_method(args.unlearn)
 
         if args.unlearn == "SCAR" or  args.unlearn == "SCAR_without_distill":
-            data_path = '/kaggle/working/Unlearn-Saliency/Classification/scar_re/surrogate_data/'
+            data_path = args.surrogate_data_path
             utils.prepare_imagenet_split(data_path)
             surrogate_loader = utils.get_surrogate(args, model)
             unlearn_data_loaders = OrderedDict([
