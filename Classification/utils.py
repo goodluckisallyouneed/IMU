@@ -416,3 +416,28 @@ def get_poisoned_loader(poison_loader, unpoison_loader, test_loader, poison_func
     )
 
     return poisoned_loader, unpoison_loader, poisoned_full_loader, poisoned_test_loader
+
+def compute_wasserstein_distance(model1, model2, loader, device, args):
+    
+    model1.eval()
+    model2.eval()
+
+    preds1 = []
+    preds2 = []
+
+    with torch.no_grad():
+        for data, label in loader:
+            data = data.to(device)
+            
+            out1 = model1(data)
+            out2 = model2(data)
+
+            
+            _, pred1 = out1.max(dim=1)  
+            _, pred2 = out2.max(dim=1)
+            preds1 += pred1.cpu().tolist()
+            preds2 += pred2.cpu().tolist()
+
+   
+    w1_dist = wasserstein_distance(preds1, preds2)
+    return w1_dist
