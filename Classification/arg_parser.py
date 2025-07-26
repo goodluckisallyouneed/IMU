@@ -170,6 +170,6 @@ def parse_args():
     parser.add_argument("--scar_epochs", default=1, type=int, help="number of total epochs for unlearn to run")
     parser.add_argument("--surrogate_dataset_path", type=str, default=None, help="need the path of surrogate dataset")
     
-    ##################################### SCAR parameters #################################################
+    ##################################### NPO parameters #################################################
     parser.add_argument("--beta", type=float, default=0, help="need value of beta in algorithm")
     return parser.parse_args()
