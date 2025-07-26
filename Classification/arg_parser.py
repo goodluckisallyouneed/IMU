@@ -173,4 +173,8 @@ def parse_args():
     
     ##################################### NPO parameters #################################################
     parser.add_argument("--beta", type=float, default=0, help="need value of beta in algorithm")
+    parser.add_argument("--unlearned_model", default=None, type=str, help="the path of unlearned model in person re-id task")
+
+    
+    
     return parser.parse_args()
