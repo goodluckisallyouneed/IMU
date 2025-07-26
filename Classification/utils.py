@@ -11,7 +11,7 @@ import random
 import shutil
 import sys
 import time
-
+from scipy.stats import wasserstein_distance
 import numpy as np
 import torch
 from dataset import *
