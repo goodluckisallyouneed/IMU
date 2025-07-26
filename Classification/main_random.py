@@ -1,18 +1,29 @@
 import copy
 import os
+import time
+import pickle
 from collections import OrderedDict
 
-import arg_parser
-import evaluation
+import numpy as np
+from scipy.stats import wasserstein_distance
+from torch.autograd import grad
+from torch.utils.data import Subset
+
 import torch
 import torch.nn as nn
 import torch.optim
 import torch.utils.data
+
+import arg_parser
+import evaluation
 import unlearn
 import utils
 from trainer import validate
+from tqdm import tqdm
 
+   
 def main():
+    start_time = time.time()
     args = arg_parser.parse_args()
 
     if torch.cuda.is_available():
@@ -91,6 +102,64 @@ def main():
             assert len(forget_dataset) + len(retain_dataset) == len(
                 train_loader_full.dataset
             )
+            if args.dataset == "cifar100" and args.type == "sub_set":            
+                def _load_map(root):
+                    with open(os.path.join(root, "cifar-100-python", "train"), "rb") as f:
+                        d = pickle.load(f, encoding="latin1")
+                    m = {}
+                    for fl, cl in zip(d["fine_labels"], d["coarse_labels"]):
+                        m[fl] = cl
+                    return [m[i] for i in range(100)]
+                fine2coarse = _load_map(args.data)
+                c_id = fine2coarse[args.class_to_replace]
+                all_in_coarse = [i for i, c in enumerate(fine2coarse) if c == c_id]
+                full_ds = train_loader_full.dataset
+                full_targets = np.array(full_ds.targets)
+                full_idx = np.where(np.isin(full_targets, all_in_coarse))[0]
+                forget_idx = np.where(full_targets == args.class_to_replace)[0]
+                retain_idx = np.setdiff1d(full_idx, forget_idx) 
+                val_ds = val_loader.dataset
+                val_targets = np.array(val_ds.targets)
+                val_idx = np.where(np.isin(val_targets, all_in_coarse))[0]
+                test_ds = test_loader.dataset
+                test_targets = np.array(test_ds.targets)
+                test_idx = np.where(np.isin(test_targets, all_in_coarse))[0]
+                def make(ds, idxs):
+                    new = copy.deepcopy(ds)
+                    new.targets = full_targets[idxs]
+                    if hasattr(ds, "data"):
+                        new.data = ds.data[idxs]
+                    return new
+                def makeval(ds, idxs):
+                    new = copy.deepcopy(ds)
+                    new.targets = val_targets[idxs]
+                    if hasattr(ds, "data"):
+                        new.data = ds.data[idxs]
+                    return new
+                def maketest(ds, idxs):
+                    new = copy.deepcopy(ds)
+                    new.targets = test_targets[idxs]
+                    if hasattr(ds, "data"):
+                        new.data = ds.data[idxs]
+                    return new 
+                train_loader_full_dataset = make(full_ds, full_idx)
+                train_loader_full = replace_loader_dataset(train_loader_full_dataset, seed=seed, shuffle=True)
+                forget_dataset = make(full_ds, forget_idx)
+                retain_dataset = make(full_ds, retain_idx)
+                forget_loader = replace_loader_dataset(forget_dataset, seed=seed, shuffle=True)
+                retain_loader = replace_loader_dataset(retain_dataset, seed=seed, shuffle=True)
+                
+                val_dataset = makeval(val_ds, val_idx)
+                val_loader = replace_loader_dataset(val_dataset, seed=seed, shuffle=False)
+                test_dataset = maketest(test_ds, test_idx)
+                test_loader = replace_loader_dataset(test_dataset, seed=seed, shuffle=False)
+                
+                print(f"number of retain dataset {len(retain_dataset)}")
+                print(f"number of forget dataset {len(forget_dataset)}")
+                print(f"number of full dataset {len(train_loader_full_dataset)}")
+            assert len(forget_dataset) + len(retain_dataset) == len(
+                train_loader_full.dataset
+            )
         except:
             marked = forget_dataset.targets < 0
             forget_dataset.imgs = forget_dataset.imgs[marked]
@@ -111,6 +180,7 @@ def main():
 
     print(f"number of retain dataset {len(retain_dataset)}")
     print(f"number of forget dataset {len(forget_dataset)}")
+    
     unlearn_data_loaders = OrderedDict(
         retain=retain_loader, forget=forget_loader, val=val_loader, test=test_loader
     )
@@ -143,6 +213,11 @@ def main():
     if evaluation_result is None:
         evaluation_result = {}
 
+    end_time = time.time()
+    total_time = end_time - start_time
+    print(f"Total run time: {total_time:.2f} seconds")
+    evaluation_result["run time"] = total_time
+    
     if "new_accuracy" not in evaluation_result:
         accuracy = {}
         for name, loader in unlearn_data_loaders.items():
@@ -184,6 +259,22 @@ def main():
             model=model,
         )
         unlearn.save_unlearn_checkpoint(model, evaluation_result, args)
+
+        if args.retrain_model_path: 
+            retrained_model = copy.deepcopy(model)
+            retrain_ckpt = torch.load(args.retrain_model_path, map_location=device)
+            if "state_dict" in retrain_ckpt:
+                state_dict = retrain_ckpt["state_dict"]
+            else:
+                state_dict = retrain_ckpt
+            retrained_model.load_state_dict(state_dict, strict=False)
+            retrained_model.to(device)
+            retrained_model.eval()
+            
+            w1_dist = utils.compute_wasserstein_distance(retrained_model, model, test_loader, device, args)
+            print(f"First Wasserstein Distance between original & unlearned model (test_loader): {w1_dist:.4f}")
+        
+            evaluation_result["W1_distance_test"] = w1_dist
 
     unlearn.save_unlearn_checkpoint(model, evaluation_result, args)
 
