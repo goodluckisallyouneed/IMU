@@ -37,7 +37,13 @@ def NPO(data_loaders, model, criterion, optimizer, epoch, args, mask=None):
     model.train()
     start = time.time()
 
-    for i, (image, target) in enumerate(train_loader):
+    for i, batch in enumerate(train_loader):
+        
+        if args.forget_pid is not None:
+            image, target = batch['img'], batch['pid']
+        else:
+            image, target = batch
+            
         if epoch < args.warmup:
             utils.warmup_lr(
                 epoch, i + 1, optimizer, one_epoch_step=len(train_loader), args=args
