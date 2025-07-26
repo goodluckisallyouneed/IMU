@@ -49,7 +49,13 @@ def woodfisher(model, train_dl, device, criterion, v, args, mask=None):
     k_vec = torch.clone(v)
     N = 1000
     o_vec = None
-    for idx, (data, label) in enumerate(tqdm(train_dl)):
+    for idx, batch in enumerate(tqdm(train_dl)):
+        
+        if args.forget_pid is not None:
+            data, label = batch['img'], batch['pid']
+        else:
+            data, label = batch
+            
         model.zero_grad()
         data = data.to(device)
         label = label.to(device)
@@ -136,6 +142,8 @@ def Wfisher(data_loaders, model, criterion, args, mask=None):
         for i, data in enumerate(tqdm(forget_loader)):
             model.zero_grad()
             data, label = get_x_y_from_data_dict(data, device)
+                
+            model.zero_grad()
             real_num = data.shape[0]
             data = data.to(device)
             label = label.to(device)
@@ -146,7 +154,12 @@ def Wfisher(data_loaders, model, criterion, args, mask=None):
             retain_grad += r_grad
             total_2 += real_num
     else:
-        for i, (data, label) in enumerate(tqdm(forget_loader)):
+        for i, batch in enumerate(tqdm(forget_loader)):
+            
+            if args.forget_pid is not None:
+                data, label = batch['img'], batch['pid']
+            else:
+                data, label = batch
             model.zero_grad()
             real_num = data.shape[0]
             data = data.to(device)
@@ -159,7 +172,12 @@ def Wfisher(data_loaders, model, criterion, args, mask=None):
             total += real_num
 
         total_2 = 0
-        for i, (data, label) in enumerate(tqdm(retain_grad_loader)):
+        for i, batch in enumerate(tqdm(retain_grad_loader)):
+            if args.forget_pid is not None:
+                data, label = batch['img'], batch['pid']
+            else:
+                data, label = batch
+                
             model.zero_grad()
             real_num = data.shape[0]
             data = data.to(device)
