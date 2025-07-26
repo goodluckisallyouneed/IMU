@@ -89,8 +89,13 @@ class ParameterPerturber:
         
         criterion = nn.CrossEntropyLoss()
         importances = self.zerolike_params_dict(self.model)
+        
         for batch in dataloader:
-            x, y = batch
+            if args.forget_pid is not None:
+                x, y = batch['img'], batch['pid']
+            else:
+                x, y = batch
+                
             x, y = x.to(self.device), y.to(self.device)
             self.opt.zero_grad()
             out = self.model(x)
