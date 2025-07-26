@@ -139,7 +139,37 @@ def parse_args():
         default=None,
         help="Specific index data to forget",
     )
-    parser.add_argument("--alpha", default=0.2, type=float, help="unlearn noise")
+    parser.add_argument("--alpha", default=0.2, type=float, help="unlearn noise & IU &")
     parser.add_argument("--mask_path", default=None, type=str, help="the path of saliency map")
+    parser.add_argument("--type", type=str, default="full_class", help="Specific unlearn type for cifar100 class_wise")
+    parser.add_argument("--retrain_model_path", default=None,type=str,help="retrained_model_path is none")
+    parser.add_argument("--top_data", default=0.1, type=float, help = "miss the top percent of chosen new forget data")
+    
+    ##################################### SSD parameters #################################################
+    parser.add_argument('--ssd_lower_bound',       type=float, default=1.0)
+    parser.add_argument('--ssd_exponent',          type=float, default=1.0)
+    parser.add_argument('--ssd_magnitude_diff',    type=float, default=0.0)
+    parser.add_argument('--ssd_forget_threshold',  type=float, default=1.0)
+    parser.add_argument('--ssd_dampening_constant',type=float, default=1.0)
+    parser.add_argument('--ssd_selection_weighting',type=float, default=10.0)
+    parser.add_argument("--ssd_max_layer", type=float, default=-1)
+    parser.add_argument("--ssd_min_layer", type=float, default=-1)
 
+    ##################################### SCAR parameters #################################################
+    parser.add_argument("--surrogate_dataset", type=str, default='subset_Imagenet')
+    parser.add_argument("--surrogate_quantity", type=int, default=-1,help='-1 for all data,1 for 1k data,2 for 2k data,..., 10 for 10k data')
+    parser.add_argument("--bsize", type=int, default=1024)
+    parser.add_argument("--wd", type=float, default=0.0)
+    parser.add_argument("--temperature", type=float, default=1)
+    parser.add_argument("--lambda_1", type=float, default=1)
+    parser.add_argument("--lambda_2", type=float, default=5)
+    parser.add_argument("--scheduler", type=int, nargs='+', default=[25,40])
+    parser.add_argument("--delta", type=float, default=.5)
+    parser.add_argument("--gamma1", type=float, default=3)
+    parser.add_argument("--gamma2", type=float, default=3)
+    parser.add_argument("--scar_epochs", default=1, type=int, help="number of total epochs for unlearn to run")
+    parser.add_argument("--surrogate_dataset_path", type=str, default=None, help="need the path of surrogate dataset")
+    
+    ##################################### SCAR parameters #################################################
+    parser.add_argument("--beta", type=float, default=0, help="need value of beta in algorithm")
     return parser.parse_args()
