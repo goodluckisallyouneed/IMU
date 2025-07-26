@@ -1,3 +1,4 @@
+from .SSD import SSD
 from .GA import GA,GA_l1
 from .RL import RL
 from .FT import FT,FT_l1
@@ -9,11 +10,13 @@ from .FT_prune import FT_prune
 from .FT_prune_bi import FT_prune_bi
 from .GA_prune_bi import GA_prune_bi
 from .GA_prune import GA_prune
-
 from .RL_pro import RL_proximal
 from .boundary_ex import boundary_expanding
 from .boundary_sh import boundary_shrink
-
+from .SCAR import SCAR
+from .SCAR import Random_l
+from .NPO import NPO
+from .IMU import IMU
 
 def raw(data_loaders, model, criterion, args, mask=None):
     pass
@@ -57,5 +60,15 @@ def get_unlearn_method(name):
         return boundary_shrink
     elif name == "RL_proximal":
         return RL_proximal
+    elif name == "SSD":
+        return SSD
+    elif name == "SCAR":
+        return SCAR
+    elif name == "Random_l":
+        return Random_l
+    elif name == "NPO":
+        return NPO
+    elif name == "IMU":
+        return IMU
     else:
         raise NotImplementedError(f"Unlearn method {name} not implemented!")
