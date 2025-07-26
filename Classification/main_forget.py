@@ -203,8 +203,8 @@ def main():
         original_model = copy.deepcopy(model)
         unlearn_method = unlearn.get_unlearn_method(args.unlearn)
 
-        if args.unlearn == "SCAR" or  args.unlearn == "SCAR_without_distill":
-            data_path = args.surrogate_data_path
+        if args.unlearn == "SCAR":
+            data_path = args.surrogate_dataset_path
             utils.prepare_imagenet_split(data_path)
             surrogate_loader = utils.get_surrogate(args, model)
             unlearn_data_loaders = OrderedDict([
