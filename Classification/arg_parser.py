@@ -144,6 +144,7 @@ def parse_args():
     parser.add_argument("--type", type=str, default="full_class", help="Specific unlearn type for cifar100 class_wise")
     parser.add_argument("--retrain_model_path", default=None,type=str,help="retrained_model_path is none")
     parser.add_argument("--top_data", default=0.1, type=float, help = "miss the top percent of chosen new forget data")
+    parser.add_argument('--forget_pid', type=int, default=None, help='need the reid to be forgotten')
     
     ##################################### SSD parameters #################################################
     parser.add_argument('--ssd_lower_bound',       type=float, default=1.0)
