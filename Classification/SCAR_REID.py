@@ -226,7 +226,7 @@ class SCAR_model(BaseMethod):
         return self.net
 
 @iterative_unlearn
-def SCAR(data_loaders, model, criterion, optimizer, epoch, args, mask=None):
+def SCAR_REID(data_loaders, model, criterion, optimizer, epoch, args, mask=None):
     start_time = time.time()
     scar = SCAR_model(
         net=model,
@@ -241,7 +241,7 @@ def SCAR(data_loaders, model, criterion, optimizer, epoch, args, mask=None):
     return unlearned_model
 
 @iterative_unlearn
-def Random_l(data_loaders, model, criterion, optimizer, epoch, args, mask=None):
+def Random_l_REID(data_loaders, model, criterion, optimizer, epoch, args, mask=None):
     start_time = time.time()
     random_labeler = RandomLabels(
         net=model,
