@@ -17,6 +17,10 @@ from .SCAR import SCAR
 from .SCAR import Random_l
 from .NPO import NPO
 from .IMU import IMU
+from .SCAR_REID import SCAR_REID
+from .SCAR_REID import Random_l_REID
+from .IMU_REID import IMU_REID
+
 
 def raw(data_loaders, model, criterion, args, mask=None):
     pass
@@ -70,5 +74,11 @@ def get_unlearn_method(name):
         return NPO
     elif name == "IMU":
         return IMU
+    elif name == "SCAR_REID":
+        return SCAR_REID
+    elif name == "Random_l_REID":
+        return Random_l_REID
+    elif name == "IMU_REID":
+        return IMU_REID
     else:
         raise NotImplementedError(f"Unlearn method {name} not implemented!")
