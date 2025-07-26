@@ -441,3 +441,151 @@ def compute_wasserstein_distance(model1, model2, loader, device, args):
    
     w1_dist = wasserstein_distance(preds1, preds2)
     return w1_dist
+
+class custom_Dset_surrogate(Dataset):
+    def __init__(self, dset,labels, logits,transf=None):
+        self.dset = dset
+        self.labels = labels
+        self.logits = logits
+        self.transf = transf
+
+
+    def __len__(self):
+        return self.dset.shape[0]
+
+    def __getitem__(self, index):
+        x = self.dset[index]
+        y = self.labels[index]
+        logit_x = self.logits[index]
+        if self.transf:
+            x=self.transf(x)
+        return x, y,logit_x
+
+def get_surrogate(args, original_model=None):
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    data_path = '/kaggle/working/Unlearn-Saliency/Classification/scar_re'
+    mean = {
+        'subset_tiny': (0.485, 0.456, 0.406),
+        'subset_Imagenet': (0.4914, 0.4822, 0.4465),
+        'subset_rnd_img': (0.5969, 0.5444, 0.4877),
+        'subset_COCO': (0.4717,0.4486,0.4089),
+        'subset_gaussian_noise': (0,0,0)
+    }
+
+    std = {
+        'subset_tiny': (0.229, 0.224, 0.225),
+        'subset_Imagenet': (0.229, 0.224, 0.225),
+        'subset_rnd_img': (0.3366, 0.3260, 0.3411),
+        'subset_COCO': (0.2754, 0.2708, 0.2852),
+        'subset_gaussian_noise': (1,1,1)
+    }
+
+    transform_list = [
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(mean[args.surrogate_dataset], std[args.surrogate_dataset]),
+    ]
+
+    transform_list_test = [
+        transforms.ToTensor(),
+        transforms.Normalize(mean[args.surrogate_dataset], std[args.surrogate_dataset]),
+    ]
+    if args.arch == 'ViT':
+        transform_list.insert(0, transforms.RandomCrop(224, padding=28))
+        transform_list.insert(0, transforms.Resize(224, antialias=True))
+        transform_list_test.insert(0, transforms.Resize(224, antialias=True))
+    else:
+        crop_size = 64 if args.dataset == 'tinyImagenet' else 32
+        padding = 8 if args.dataset == 'tinyImagenet' else 4
+        transform_list.insert(0, transforms.RandomCrop(crop_size, padding=padding))
+
+    transform_dset = transforms.Compose(transform_list)
+    transform_test = transforms.Compose(transform_list_test)
+
+    if args.surrogate_dataset != "subset_gaussian_noise":
+        root = os.path.join(data_path, 'surrogate_data/', args.surrogate_dataset + '_split')
+        if args.class_to_replace is not None:
+            subset = torchvision.datasets.ImageFolder(root=root, transform=transform_dset)
+        else:
+            subset = torchvision.datasets.ImageFolder(root=root, transform=transform_test)
+
+        if args.surrogate_quantity == -1:
+            pass_dataset = subset
+        else:
+            class_list = list(range(min(args.surrogate_quantity, len(subset.classes))))
+            indices = [i for i, (_, lbl) in enumerate(subset.imgs) if lbl in class_list]
+            pass_dataset = torch.utils.data.Subset(subset, indices)
+    else:
+        # Gaussian noise dataset
+        if args.surrogate_quantity == -1:
+            args.surrogate_quantity = 10
+        datasets = []
+        for i in range(args.surrogate_quantity):
+            fname = f"{data_path}/surrogate_data/{args.surrogate_dataset}_split/{i}/gaussian_noise_{i}.pt"
+            imgs = torch.load(fname)
+            labels = torch.zeros(imgs.shape[0])
+            datasets.append(torch.utils.data.TensorDataset(imgs, labels))
+        pass_dataset = torch.utils.data.ConcatDataset(datasets)
+
+    loader_surrogate = DataLoader(
+        pass_dataset,
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=args.num_workers
+    )
+    if args.class_to_replace is None:
+        # Extract features and logits
+        bbone = torch.nn.Sequential(*(list(original_model.children())[:-1] + [torch.nn.Flatten()]))
+        fc = original_model.fc
+        bbone.eval()
+
+        logits_list, data_list, label_list, feat_list = [], [], [], []
+        for img, _ in loader_surrogate:
+            img = img.to(device)
+            with torch.no_grad():
+                out = original_model(img)
+                logits_list.append(out.cpu())
+                pred_lbl = torch.argmax(out, dim=1).cpu()
+                data_list.append(img.cpu())
+                label_list.append(pred_lbl)
+                feat_list.append(bbone(img).cpu())
+
+        logits = torch.cat(logits_list)
+        data_all = torch.cat(data_list)
+        labels_all = torch.cat(label_list)
+        features_all = torch.cat(feat_list)
+
+        dataset_wlogits = custom_Dset_surrogate(data_all, labels_all, logits)
+        print('LEN surrogate', len(dataset_wlogits))
+
+        # compute class sample counts
+        class_counts = torch.zeros(args.num_classes, dtype=torch.long)
+        for i in range(args.num_classes):
+            class_counts[i] = (labels_all == i).sum()
+        class_counts[class_counts < 3] = 5
+        weights = 1.0 / class_counts.float()
+        sampler = torch.utils.data.sampler.WeightedRandomSampler(
+            weights, num_samples=len(dataset_wlogits), replacement=True
+        )
+        loader_surrogate = DataLoader(
+            dataset_wlogits,
+            batch_size=args.batch_size,
+            sampler=sampler,
+            num_workers=args.num_workers
+        )
+
+    return loader_surrogate
+
+def prepare_imagenet_split(data_path):
+    src = os.path.join(data_path, "subset_Imagenet")
+    dst = os.path.join(data_path, "subset_Imagenet_split")
+    os.makedirs(dst, exist_ok=True)
+
+    images = glob.glob(os.path.join(src, "*.JPEG"))
+    random.shuffle(images)
+
+    for idx, img_file in enumerate(images):
+        class_id = idx // 1000
+        class_dir = os.path.join(dst, f"class_{class_id}")
+        os.makedirs(class_dir, exist_ok=True)
+        os.system(f"cp {img_file} {class_dir}")
