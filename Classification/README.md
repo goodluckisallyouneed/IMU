@@ -67,6 +67,7 @@ pip install -r requirements.txt
    ```bash
    python -u main_forget.py --dataset {dataset name} --unlearn SSD --unlearn_epochs ${epochs for unlearning} --unlearn_lr ${learning rate for unlearning} --class_to_replace ${forgetting class} --ssd_selection_weighting ${ssd_selection_weighting} --ssd_dampening_constant ${ssd_dampening_constant}
    ```
+   
   * NPO
   ```bash
   python main_forget.py --save_dir ${save_dir} --model_path ${origin_model_path} --dataset {dataset name} --unlearn NPO --class_to_replace ${forgetting class} --unlearn_epochs ${epochs for unlearning} --unlearn_lr ${learning rate for unlearning} --beta ${beta}
@@ -89,3 +90,72 @@ pip install -r requirements.txt
 ```bash
   python main_forget.py --save_dir ${save_dir} --model_path ${origin_model_path} --dataset {dataset name} --unlearn IMU --class_to_replace ${forgetting class} --unlearn_epochs ${epochs for unlearning} --unlearn_lr ${learning rate for unlearning} --alpha ${alpha} --top_data 0.5 
 ```
+
+## IMU for Re-ID task
+
+To begin, please download the market1501 dataset into the data folder.
+
+### Scripts
+1. Get the origin model.
+    ```bash
+   
+    pip install torchreid --quiet
+    
+    python - << 'EOF'
+    import torchreid
+    
+    datamanager = torchreid.data.ImageDataManager(
+        root='/kaggle/working',       
+        sources='market1501',
+        targets='market1501',
+        height=256,
+        width=128,
+        batch_size_train=32,
+        batch_size_test=100,                 
+        transforms=['random_flip', 'random_crop']
+    )
+    
+    model = torchreid.models.build_model(
+        name='resnet50',
+        num_classes=datamanager.num_train_pids,
+        loss='softmax',
+        pretrained=True
+    )
+    model = model.cuda()
+    
+    optimizer = torchreid.optim.build_optimizer(
+        model,
+        optim='adam',
+        lr=0.0003
+    )
+    
+    scheduler = torchreid.optim.build_lr_scheduler(
+        optimizer,
+        lr_scheduler='single_step',
+        stepsize=20
+    )
+    
+    engine = torchreid.engine.ImageSoftmaxEngine(
+        datamanager,
+        model,
+        optimizer=optimizer,
+        scheduler=scheduler,
+        label_smooth=True
+    )
+    engine.run(
+        save_dir='log/resnet50',
+        max_epoch=60,
+        eval_freq=10,
+        print_freq=10,
+        test_only=False
+    )
+    ```
+
+2. Unlearn
+   Here is a example for re-ID unleaning.
+   ```bash
+   python main_forget_reid.py --seed ${seed} --model_path ${original_model_path} --save_dir ${save_dir} --forget_pid ${target ID to forget} --unlearn ${unlearn_method} --unlearn_epochs ${unlearn_epochs} --unlearn_lr ${unlearn_lr}
+   ```
+   Note that in the Re-ID task, IMU_REID and SCAR_REID should be used, while all other methods remain unchanged.
+
+3. Evaluate
