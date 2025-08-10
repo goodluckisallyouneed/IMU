@@ -104,7 +104,7 @@ def main():
         )
     #prepare the dataset for reid
     train_manager = torchreid.data.ImageDataManager(
-        root='/kaggle/working',       
+        root='data',       
         sources='market1501',
         targets='market1501',
         height=256,
