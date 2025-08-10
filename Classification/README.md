@@ -159,3 +159,14 @@ To begin, please download the market1501 dataset into the data folder.
    Note that in the Re-ID task, IMU_REID and SCAR_REID should be used, while all other methods remain unchanged.
 
 3. Evaluate
+   To test the generalization ability of the model, use the query and gallery set of the dataset.
+   
+   ```bash
+   python evaluate_re_id.py --unlearned_model ${unlearned_model_path}
+   ```
+
+4.Visualization
+  To visually display the performance of the model on the forget set and the retain set, the following script can be run to generate the CAM plots.
+  ```bash
+  python draw_hot_map_reid.py --seed ${seed} --dataset 'market1501' --model_path ${unlearned_model} --forget_pid ${the ID to visualize} --save_dir ${save_dir}
+  ```
