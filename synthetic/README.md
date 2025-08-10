@@ -1,4 +1,5 @@
 # IMU unlearning for Markov chains
+The code structure of this project is adapted from the https://github.com/OPTML-Group/Unlearn-Simple/blob codebase.
 
 Firstly, please pip install transformers==4.35.2 
 
