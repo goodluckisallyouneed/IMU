@@ -63,30 +63,28 @@ pip install -r requirements.txt
     ```bash
     python -u main_forget.py --dataset {dataset name} --unlearn Random_l --unlearn_epochs 1 --scar_epochs ${epochs for unlearning} --unlearn_lr ${learning rate for unlearning} --class_to_replace ${forgetting class} --model_path ${origin_model_path} --save_dir ${save_dir} --num_workers 4
     ```
-
    * SSD
    ```bash
    python -u main_forget.py --dataset {dataset name} --unlearn SSD --unlearn_epochs ${epochs for unlearning} --unlearn_lr ${learning rate for unlearning} --class_to_replace ${forgetting class} --ssd_selection_weighting ${ssd_selection_weighting} --ssd_dampening_constant ${ssd_dampening_constant}
    ```
-
   * NPO
   ```bash
   python main_forget.py --save_dir ${save_dir} --model_path ${origin_model_path} --dataset {dataset name} --unlearn NPO --class_to_replace ${forgetting class} --unlearn_epochs ${epochs for unlearning} --unlearn_lr ${learning rate for unlearning} --beta ${beta}
   ```
 
- 2.2 Here is the script for sample-wise forgetting of CIFAR-10 or CIFAR-100 dataset, changing the number of indexes_to_replace to randomly select samples from dataset and then conduct the unlearning process.
+  2.2 Here is the script for sample-wise forgetting of CIFAR-10 or CIFAR-100 dataset, changing the number of indexes_to_replace to randomly select samples from dataset and then conduct the unlearning process.
    
   ```bash
     python main_forget.py --save_dir ${save_dir} --model_path ${origin_model_path} --dataset {dataset name} --unlearn ${unlearn_method} --indexes_to_replace ${number of forgetting samples} --unlearn_epochs ${epochs for unlearning} --unlearn_lr ${learning rate for unlearning}
   ```    
 
- 2.3 Here is the script for forgetting the specific sub-class of CIFAR-100 dataset, which is a more challenging task than entire class forgetting.
+   2.3 Here is the script for forgetting the specific sub-class of CIFAR-100 dataset, which is a more challenging task than entire class forgetting.
 
  ```bash
     python main_forget.py --save_dir ${save_dir} --model_path ${origin_model_path} --dataset cifar100 --unlearn ${unlearn_method} --class_to_replace ${number of forgetting samples} --type sub_set --unlearn_epochs ${epochs for unlearning} --unlearn_lr ${learning rate for unlearning}
   ```
 
-2.4 To explore the unlearn effect of only use the top 50% influencial samples of the forget set in IMU method, here is the example
+   2.4 To explore the unlearn effect of only use the top 50% influencial samples of the forget set in IMU method, here is the example
 
 ```bash
   python main_forget.py --save_dir ${save_dir} --model_path ${origin_model_path} --dataset {dataset name} --unlearn IMU --class_to_replace ${forgetting class} --unlearn_epochs ${epochs for unlearning} --unlearn_lr ${learning rate for unlearning} --alpha ${alpha} --top_data 0.5 
