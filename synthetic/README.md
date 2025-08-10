@@ -63,7 +63,7 @@ python train.py \
 ```
 ###  Train the retrained mode
 ```bash
-!python train.py \
+python train.py \
     --state_size $state_size \
     --seq_length_retain $seq_length_retain \
     --seq_length_forget1 $seq_length_forget1 \
