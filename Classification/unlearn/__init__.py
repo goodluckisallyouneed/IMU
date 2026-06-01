@@ -20,6 +20,7 @@ from .IMU import IMU
 from .SCAR_REID import SCAR_REID
 from .SCAR_REID import Random_l_REID
 from .IMU_REID import IMU_REID
+from .GDR_GMA import GDR_GMA
 
 
 def raw(data_loaders, model, criterion, args, mask=None):
@@ -80,5 +81,7 @@ def get_unlearn_method(name):
         return Random_l_REID
     elif name == "IMU_REID":
         return IMU_REID
+    elif name == "GDR_GMA":
+        return GDR_GMA
     else:
         raise NotImplementedError(f"Unlearn method {name} not implemented!")
