@@ -175,6 +175,26 @@ def parse_args():
     parser.add_argument("--beta", type=float, default=0, help="need value of beta in algorithm")
     parser.add_argument("--unlearned_model", default=None, type=str, help="the path of unlearned model in person re-id task")
 
+    ##################################### GDR-GMA parameters #############################################
+    parser.add_argument("--gdr_gamma", type=float, default=100.0,
+                        help="GDR-GMA: gamma in the sigmoid magnitude weight (default 100, paper)")
+    parser.add_argument("--gdr_epsilon", type=float, default=0.02,
+                        help="GDR-GMA: epsilon in the sigmoid magnitude weight (default 0.02, paper)")
+
+    ##################################### AMUN parameters ################################################
+    parser.add_argument("--amun_eps", type=float, default=0.04,
+                        help="AMUN: initial PGDL2 epsilon budget (paper default 0.04)")
+    parser.add_argument("--amun_steps", type=int, default=50,
+                        help="AMUN: PGDL2 step count per outer iteration (paper default 50)")
+    parser.add_argument("--amun_use_remain", action="store_true", default=True,
+                        help="AMUN: train on retain ∪ advset (paper default True). "
+                             "Pass --amun_no_use_remain to switch to the advonly ablation.")
+    parser.add_argument("--amun_no_use_remain", dest="amun_use_remain",
+                        action="store_false",
+                        help="AMUN: disable use_remain (advonly variant: forget ∪ advset)")
+    parser.add_argument("--amun_alpha_l1", type=float, default=0.0,
+                        help="AMUN: l1 regularization coefficient (paper l1 ablation uses 5e-4)")
+
     
     
     return parser.parse_args()
